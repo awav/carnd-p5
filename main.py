@@ -37,41 +37,6 @@ importlib.reload(common)
 
 from features import Features
 
-def load_dataset(feat, **kwargs):
-    v_ims = common.load_images("data/vehicles/", "data/OwnCollection/vehicles/", color='HSV')
-    nv_ims = common.load_images("data/non-vehicles/", "data/OwnCollection/non-vehicles/", color='HSV')
-    return feat.extract(v_ims, **kwargs), feat.extract(nv_ims, **kwargs)
-
-def fit_and_normalize(feat, x, mode='standard'):
-    feat.fit_scaler(x, mode)
-    return feat.normalize(x)
-
-def save_dataset_norm(x, y, filename='data/dataset-norm.p'):
-    save_dataset(x, y, filename=filename)
-
-def save_dataset(x, y, filename='data/dataset.p'):
-    with open(filename, 'wb') as fd:
-        pickle.dump({'x': x, 'y': y}, fd)
-
-def dataset_norm():
-    return load_dataset(filename='data/dataset-norm.p', onlyfile=True)
-    
-def dataset(filename='data/dataset.p', onlyfile=False):
-    f = Features()
-    if os.path.isfile(filename):
-        with open(filename, 'rb') as fd:
-            data = pickle.load(fd)
-            x, y = data['x'], data['y']
-    elif onlyfile == False:
-        v_feat, nv_feat = load_dataset(f)
-        v_lbl = np.array([1] * v_feat.shape[0])
-        nv_lbl = np.array([0] * nv_feat.shape[0])
-        x = np.vstack((v_feat, nv_feat))
-        y = np.concatenate([v_lbl, nv_lbl])
-    else:
-        return f, None, None
-    return f, x, y
-
 def visualize():
     print("Load images")
     v_ims1 = common.load_images("data/vehicles/", color='RGB')
@@ -103,53 +68,23 @@ def visualize():
     print("Show images")
     fig.show()
 
-def split_data(x, y, random_state=101):
-    xtr, xt, ytr, yt = train_test_split(x, y, test_size=0.2, random_state=random_state)
-    return (xtr, ytr), (xt, yt)
+import model
 
-def train_xgboost(x, y, xtest, ytest, show=False, random_state=101):
-    xgb = XGBClassifier(
-              learning_rate=0.1,
-              n_estimators=150,
-              max_depth=5,
-              min_child_weight=1,
-              gamma=0,
-              subsample=0.8,
-              colsample_bytree=0.8,
-              objective='binary:logistic',
-              nthread=4,
-              scale_pos_weight=1,
-              seed=random_state)
-    xgb.fit(x, y, eval_metric='auc')
-    pred = xgb.predict(xtest)
-    pred_prob = xgb.predict_proba(xtest)
-    acc_msg = "Test accuracy: {0:.05f}"
-    auc_msg = "AUC score: {0:.05f}"
-    importance = pd.Series(xgb.booster().get_fscore()).sort_values(ascending=False)
-    importance.plot(kind='bar', title='Feature Importance')
-    plt.show()
-    print(acc_msg.format(metrics.accuracy_score(ytest, pred)))
-    print(pred[:10])
-    print(pred_prob[:10])
-    print(auc_msg.format(metrics.roc_auc_score(ytest, pred_prob)))
-    return xgb
-  
-def embeddings(x, y):
-    LOG_DIR = 'tflog'
-    embedding_var = tf.Variable(xnorm, name='vehicles')
-    step = tf.Variable(0, trainable=False, name='global_step')
-    with open(metadata, 'wb') as metadata_file:
-        for row in y:                           
-            metadata_file.write(bytes('%d\n' % row, 'utf-8'))
-    with tf.Session() as sess:
-        init = tf.global_variables_initializer()
-        sess.run(init)
-        saver = tf.train.Saver()
-        saver.save(sess, os.path.join(LOG_DIR, "model.ckpt"), step)
-        summary_writer = tf.summary.FileWriter(LOG_DIR)
-        config = projector.ProjectorConfig()
-        embedding = config.embeddings.add()
-        embedding.tensor_name = embedding_var.name
-        embedding.metadata_path = os.path.join(LOG_DIR, 'metadata.tsv')
-        projector.visualize_embeddings(summary_writer, config)
-
+def rects(img, factor_w=0.9, factor_h=1.5):
+    im = img.copy()
+    y = 400
+    h = 60
+    w = 10
+    sh, sw, _ = im.shape
+    print(sh, sw)
+    for i in range(1):
+        width = h * w
+        topx = (sw - width) // 2
+        botx = sw - topx
+        topy = y
+        boty = topy + h
+        h = np.int32(factor_h * h)
+        w = np.int32(factor_w * w)
+        print((topx, topy),(botx, boty))
+        im = cv.rectangle(im, (topx, topy), (botx, boty), (255,5*i+1,0), 1)
+    return im
