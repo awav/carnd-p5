@@ -21,7 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import common
 import features
-import model as mdl
+import model
 import os
 
 import importlib
@@ -32,16 +32,47 @@ importlib.reload(common)
 from calibrator import Calibrator as clb
 
 class FrameVehiclePipeline():
-    def __init__(self, model, shape=(720, 1280)):
-        self.
-        if model.__class__ is not mdl.CarModel:
+    def __init__(self, classifier, shape=(720, 1280)):
+        if classifier.__class__ is not model.CarModel:
            raise ValueError('You can pass only CarModel argument')
-        self._model = model
+        self._model = classifier
+        self._slices = Slices(**(self.slice_params()))
     def process(self, frame, show=False):
         im = clb.undistort(frame)
-    def windows(img):
-        
-    def _windows(boxes=[((0, 0),(720,1280))], windows=[(64, 64)], overlaps=[(0.5, 0.5)]):
+        boxes = self._find_cars_boxes(heatmap)
+        return self._draw_car_boces(boxes)
+    def slice_params(self, height=720, width=1280):
+        ws = [64,96,128,160]
+        nw_y = 400
+        nw_xs = [300,200,100,0]
+        se_ys = [nw_y + w for w in ws]
+        boxes = [((nw_xs[0], nw_y), (width-nw_xs[0], se_ys[0])) for i in range(4)]
+        #box1 = nw1, se1 = ((nw_xs[0], nw_y), (width-nw_xs[0], se_ys[0]))
+        #box2 = nw2, se2 = ((nw_xs[1], nw_y), (width-nw_xs[1], se_ys[1]))
+        #box3 = nw3, se3 = ((nw_xs[2], nw_y), (width-nw_xs[2], se_ys[2]))
+        #box4 = nw4, se4 = ((nw_xs[3], nw_y), (width-nw_xs[3], se_ys[3]))
+        #nw5, se5 = ((0, 400), (w, 592))
+        return {'boxes': boxes,
+                'windows': list(zip(ws, ws)),
+                'overlaps': [(0.75, 0.75)] * 4}
+    def _find_cars_boxes(im, show=False):
+        heatmap = np.zeros(im.shape[:2])
+        for nw, se in self._slices.wins:
+            ys, ye = nw[1], se[1]
+            xs, xe = nw[0], se[0]
+            car = self._module.predict(np.resize(im[ys:ye,xs:xe,:], self._model.input_shape[:2]))
+            if car:
+                heapmap[ys:ye,xs:xe,:] += 1
+        if show == True:
+            common.show_images
+
+class Slices():
+    def __init__(self, **kwargs):
+        self.wins = [w for w in self._gen_windows(**kwargs)]
+    def _gen_windows(self,
+                     boxes=[((0, 0),(1280,720))],
+                     windows=[(64, 64)],
+                     overlaps=[(0.5, 0.5)]):
         n = len(boxes)
         assert(n == len(windows) and n == len(overlaps))
         for i in range(n):

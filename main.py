@@ -72,19 +72,30 @@ import model
 
 def rects(img, factor_w=0.9, factor_h=1.5):
     im = img.copy()
-    y = 400
-    h = 60
-    w = 10
-    sh, sw, _ = im.shape
-    print(sh, sw)
-    for i in range(1):
-        width = h * w
-        topx = (sw - width) // 2
-        botx = sw - topx
-        topy = y
-        boty = topy + h
-        h = np.int32(factor_h * h)
-        w = np.int32(factor_w * w)
-        print((topx, topy),(botx, boty))
-        im = cv.rectangle(im, (topx, topy), (botx, boty), (255,5*i+1,0), 1)
+    w = 1280
+    nw1, se1 = (300, 400), (w-300, 464)
+    nw2, se2 = (200, 400), (w-200, 496)
+    nw3, se3 = (100, 400), (w-100, 528)
+    nw4, se4 = (0, 400), (w, 560)
+    nw5, se5 = (0, 400), (w, 592)
+    i = 1
+    im = cv.rectangle(im, nw1, se1, (255,0,0), 1)
+    i = 2
+    im = cv.rectangle(im, nw2, se2, (0,255,0), 1)
+    i = 3
+    im = cv.rectangle(im, nw3, se3, (0,0,255), 1)
+    i = 4
+    im = cv.rectangle(im, nw4, se4, (255,0,255), 1)
+    i = 5
+    im = cv.rectangle(im, nw5, se5, (255,255,0), 1)
+    ##for i in range(1):
+    ##    width = h * w
+    ##    topx = (sw - width) // 2
+    ##    botx = sw - topx
+    ##    topy = y
+    ##    boty = topy + h
+    ##    h = np.int32(factor_h * h)
+    ##    w = np.int32(factor_w * w)
+    ##    print((topx, topy),(botx, boty))
+    ##    im = cv.rectangle(im, (topx, topy), (botx, boty), (255,5*i+1,0), 1)
     return im

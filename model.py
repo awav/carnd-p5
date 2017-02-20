@@ -90,7 +90,9 @@ class CarModel():
     def __init__(self):
         self._f = Features()
         self._model = None
+        self.input_shape = None
     def prepare(self, data, mode='standard'):
+        self.input_shape = data.x_orig[0].shape
         features = self._f.extract(data.x_orig)
         self._f.fit_scaler(features, mode=mode)
         x = self._f.normalize(features)
@@ -105,11 +107,9 @@ class CarModel():
         self._train(train, test, show=False)
     def predict(self, im):
         x = self._f.extract(np.array([im]))
-        print(x.shape)
         x = self._f.normalize(x)
-        print(x.shape)
         pred = self._model.predict(x)
-        return pred
+        return bool(pred[0])
     def _split_data(self, x, y, test_size=0.2, random_state=101):
         xtr, xt, ytr, yt = train_test_split(x, y, test_size=test_size, random_state=random_state)
         return (xtr, ytr), (xt, yt)
