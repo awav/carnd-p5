@@ -106,9 +106,8 @@ class CarModel():
         train, test = self._split_data(x, y)
         self._train(train, test, show=False)
     def predict(self, im):
-        x = self._f.extract(np.array([im]))
-        x = self._f.normalize(x)
-        pred = self._model.predict(x)
+        f = self._f
+        pred = self._model.predict(f.normalize(f.extract(np.array([im]))))
         return bool(pred[0])
     def _split_data(self, x, y, test_size=0.2, random_state=101):
         xtr, xt, ytr, yt = train_test_split(x, y, test_size=test_size, random_state=random_state)

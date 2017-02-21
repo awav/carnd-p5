@@ -23,6 +23,10 @@ import os
 import re
 
 def load_image(filename, color='RGB'):
+    im = cv.imread(filename, cv.IMREAD_COLOR)
+    return cvt_color(im, color)
+
+def cvt_color(im, color='RGB'):
     colors = {'RGB':cv.COLOR_BGR2RGB,
               'HLS':cv.COLOR_BGR2HLS,
               'HSV':cv.COLOR_BGR2HSV,
@@ -31,7 +35,6 @@ def load_image(filename, color='RGB'):
               'YCrCb':cv.COLOR_BGR2YCrCb}
     if color not in colors:
         raise ValueError("{0} color is not allowed".format(color))
-    im = cv.imread(filename, cv.IMREAD_COLOR)
     return cv.cvtColor(im, colors[color.upper()])
 
 def list_images(folder, regex=None):
@@ -86,12 +89,20 @@ def show_image(ims, ncols=1, nrows=1, window_title=None, titles=None, cmaps=None
     """
     Show images as tiles in grid.
     """
-    print(ncols, nrows)
     fig, axes = plt.subplots(ncols=ncols, nrows=nrows, squeeze=True)
     if window_title is not None:
         fig.canvas.set_window_title(window_title)
     size = len(ims)
-    if ncols == 1 or nrows == 1:
+    if ncols == 1 and nrows == 1:
+        if cmaps is not None:
+            axes.imshow(ims, cmap=cmaps)
+        else:
+            axes.imshow(ims)
+        if titles is not None:
+            axes.set_title(titles)
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+    elif ncols == 1 or nrows == 1:
         n = max(ncols, nrows)
         for i in range(n):
             ax = axes[i]
@@ -131,3 +142,23 @@ def equalize_hist(im, show=False):
     if show == True:
         show_images(im, im_eq, 'original', 'equalized', 'Histogram equalization')
     return im_eq
+
+## In [5]: data = model.VehiclesDataset(); m = model.CarModel(); data = m.prepare(data); m.fit(data)
+## data/vehicles/GTI_MiddleClose
+## data/vehicles/GTI_Left
+## data/vehicles/KITTI_extracted
+## data/vehicles/GTI_Far
+## data/vehicles/GTI_Right
+## data/OwnCollection/vehicles/Right
+## data/OwnCollection/vehicles/Left
+## data/OwnCollection/vehicles/Far
+## data/OwnCollection/vehicles/MiddleClose
+## data/non-vehicles/GTI
+## data/non-vehicles/Extras
+## data/OwnCollection/non-vehicles/Right
+## data/OwnCollection/non-vehicles/Left
+## data/OwnCollection/non-vehicles/Far
+## data/OwnCollection/non-vehicles/MiddleClose
+## Test accuracy: 0.99821
+## AUC score: 0.99997
+

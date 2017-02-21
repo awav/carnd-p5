@@ -23,6 +23,7 @@ import common
 import features
 import model
 import os
+import scipy.ndimage.measurements as measurments
 
 import importlib
 
@@ -36,11 +37,15 @@ class FrameVehiclePipeline():
         if classifier.__class__ is not model.CarModel:
            raise ValueError('You can pass only CarModel argument')
         self._model = classifier
-        self._slices = Slices(**(self.slice_params()))
+        self._slicer = Slicer(**(self.slice_params()))
+        self._heatmap = np.zeros(shape)
+        self._labels = None
     def process(self, frame, show=False):
-        im = clb.undistort(frame)
-        boxes = self._find_cars_boxes(heatmap)
-        return self._draw_car_boces(boxes)
+        im = common.cvt_color(clb.undistort(frame), 'HSV')
+        self._find_cars_heatmap(im, show=show)
+        self._find_cars_boxes(show=show)
+        self._reset_heatmap()
+        return self._draw_car_boxes(im, show=show)
     def slice_params(self, height=720, width=1280):
         ws = [64,96,128,160]
         nw_y = 400
@@ -55,18 +60,37 @@ class FrameVehiclePipeline():
         return {'boxes': boxes,
                 'windows': list(zip(ws, ws)),
                 'overlaps': [(0.75, 0.75)] * 4}
-    def _find_cars_boxes(im, show=False):
-        heatmap = np.zeros(im.shape[:2])
-        for nw, se in self._slices.wins:
+    def _find_cars_heatmap(self, im, show=False):
+        shape = self._model.input_shape[:2]
+        for nw, se in self._slicer.wins:
             ys, ye = nw[1], se[1]
             xs, xe = nw[0], se[0]
-            car = self._module.predict(np.resize(im[ys:ye,xs:xe,:], self._model.input_shape[:2]))
+            car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape))
             if car:
-                heapmap[ys:ye,xs:xe,:] += 1
+                self._heatmap[ys:ye,xs:xe] += 1
         if show == True:
-            common.show_images
+            zeros = np.zeros(self._heatmap.shape)
+            hm = np.dstack([self._heatmap, zeros, zeros])
+            common.show_image(im, hm, ncols=2, window_title='Cars Heat Map',
+                               titles=['original', 'heatmap'])
+    def _find_cars_boxes(self, thresh=2, show=False):
+        self._heatmap[self._heatmap < thresh] = 0
+        self._labels = measurments.label(self._heatmap)
+    def _draw_car_boxes(self, im, show=False):
+        n = self._labels[1]+1
+        for i in range(1, n):
+            ## x and y coordinates
+            y, x = (self._labels[0] == car).nonzero()
+            nw, se = (np.min(x), np.min(y)), (np.max(x), np.max(y))
+            cv.rectangle(im, nw, se, (255,255,0), 2)
+        if show == True:
+            common.show_image(im, window_title='Cars Heat Map', titles='Detected cars')
+        return im
+    def _reset_heatmap(self):
+        self._heatmap[:] *= 0.3
+        
 
-class Slices():
+class Slicer():
     def __init__(self, **kwargs):
         self.wins = [w for w in self._gen_windows(**kwargs)]
     def _gen_windows(self,
