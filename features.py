@@ -59,8 +59,8 @@ class Features:
     def _extract_features(cls, im,
                inc_hog_channel='all', inc_color_hist=True,
                inc_spatial_bins=True, orients=8,
-               cell_size=7, block_size=2,
-               vector=True, dst_size=16,
+               cell_size=8, block_size=2,
+               vector=True, dst_size=32,
                bins=32, binrange=(0,256),
                show=False):
         fhog, fcolor, fspatial = [], [], []

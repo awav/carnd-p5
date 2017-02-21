@@ -30,21 +30,32 @@ import model
 
 import importlib
 from calibrator import Calibrator as clb
+from moviepy.editor import VideoFileClip
 
 importlib.reload(track)
 importlib.reload(model)
 
-def single_image(filename):
+def single_image(filename, model_path='./data/model.p'):
     if not clb.initialized():
         clb.find_pictures(directory='./camera_cal/')
         clb.calibrate_camera(9, 6)
     im = common.load_image(filename, color='RGB')
-    im = clb.undistort(im)
+    common.show_image(im)
+    m = model.CarModel()
+    m.load(filename=model_path)
+    t = track.FrameVehiclePipeline(m, shape=im.shape[:2])
+    t.process(im, show=True)
+
+def single_video(filename, output='./output.mp4'):
+    if not clb.initialized():
+        clb.find_pictures(directory='./camera_cal/')
+        clb.calibrate_camera(9, 6)
     m = model.CarModel()
     m.load()
-    t = track.FrameVehiclePipeline(m, shape=im.shape[:2])
-    im = common.cvt_color(im, color='HSV')
-    t.process(im, show=True)
+    t = track.FrameVehiclePipeline(m, shape=(720,1280))
+    video = VideoFileClip(filename)
+    out = video.fl_image(t.process)
+    out.write_videofile(output, audio=False)
 
 def visualize():
     print("Load images")

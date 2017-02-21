@@ -40,45 +40,54 @@ class FrameVehiclePipeline():
         self._slicer = Slicer(**(self.slice_params()))
         self._heatmap = np.zeros(shape)
         self._labels = None
-    def process(self, frame, show=False):
-        im = common.cvt_color(clb.undistort(frame), 'HSV')
+    def process(self, orig, show=False):
+        orig = clb.undistort(orig, show=show)
+        im = cv.cvtColor(orig, cv.COLOR_RGB2HSV)
         self._find_cars_heatmap(im, show=show)
         self._find_cars_boxes(show=show)
         self._reset_heatmap()
-        return self._draw_car_boxes(im, show=show)
+        return self._draw_car_boxes(orig, show=show)
     def slice_params(self, height=720, width=1280):
-        ws = [64,96,128,160]
-        nw_y = 400
-        nw_xs = [300,200,100,0]
-        se_ys = [nw_y + w for w in ws]
-        boxes = [((nw_xs[0], nw_y), (width-nw_xs[0], se_ys[0])) for i in range(4)]
-        #box1 = nw1, se1 = ((nw_xs[0], nw_y), (width-nw_xs[0], se_ys[0]))
-        #box2 = nw2, se2 = ((nw_xs[1], nw_y), (width-nw_xs[1], se_ys[1]))
-        #box3 = nw3, se3 = ((nw_xs[2], nw_y), (width-nw_xs[2], se_ys[2]))
-        #box4 = nw4, se4 = ((nw_xs[3], nw_y), (width-nw_xs[3], se_ys[3]))
-        #nw5, se5 = ((0, 400), (w, 592))
+        n = 4
+
+        #ws = [96,128,160,192]
+        #nw_y = [400,400,430,460]
+        #nw_xs = [0,0,0,0]
+        #se_ys = [500,500,550,580]
+
+        ws = [96,128,160,192]
+        nw_y = [400,400,400,400]
+        nw_xs = [100,0,0,0]
+        se_ys = [nw_y[i] + 1.5*ws[i] for i in range(n)]
+        boxes = [((nw_xs[i], nw_y[i]), (width-nw_xs[i], se_ys[i])) for i in range(n)]
         return {'boxes': boxes,
                 'windows': list(zip(ws, ws)),
                 'overlaps': [(0.75, 0.75)] * 4}
     def _find_cars_heatmap(self, im, show=False):
-        shape = self._model.input_shape[:2]
+        shape = self._model.input_shape
+        if show == True:
+            cpy = cv.cvtColor(im, cv.COLOR_HSV2RGB)
         for nw, se in self._slicer.wins:
             ys, ye = nw[1], se[1]
             xs, xe = nw[0], se[0]
+            #print(nw, se)
             car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape))
-            if car:
+            if car == 1:
+                print(nw, se)
                 self._heatmap[ys:ye,xs:xe] += 1
+                if show == True:
+                    cpy = cv.rectangle(cpy, nw, se, (0,0,255), 2)
         if show == True:
-            zeros = np.zeros(self._heatmap.shape)
-            hm = np.dstack([self._heatmap, zeros, zeros])
-            common.show_image(im, hm, ncols=2, window_title='Cars Heat Map',
-                               titles=['original', 'heatmap'])
-    def _find_cars_boxes(self, thresh=2, show=False):
+            #zeros = np.zeros(self._heatmap.shape)
+            #hm = np.dstack([self._heatmap, zeros, zeros])
+            common.show_image([cpy, self._heatmap], ncols=2, window_title='Cars Heat Map',
+                              titles=['original', 'heatmap'])
+    def _find_cars_boxes(self, thresh=1.5, show=False):
         self._heatmap[self._heatmap < thresh] = 0
         self._labels = measurments.label(self._heatmap)
     def _draw_car_boxes(self, im, show=False):
         n = self._labels[1]+1
-        for i in range(1, n):
+        for car in range(1, n):
             ## x and y coordinates
             y, x = (self._labels[0] == car).nonzero()
             nw, se = (np.min(x), np.min(y)), (np.max(x), np.max(y))
@@ -88,7 +97,6 @@ class FrameVehiclePipeline():
         return im
     def _reset_heatmap(self):
         self._heatmap[:] *= 0.3
-        
 
 class Slicer():
     def __init__(self, **kwargs):
@@ -100,13 +108,12 @@ class Slicer():
         n = len(boxes)
         assert(n == len(windows) and n == len(overlaps))
         for i in range(n):
-            top = boxes[i][0]
-            bot = boxes[i][1]
+            nw, se = boxes[i]
             window = windows[i]
             overlap = overlaps[i]
             ##
-            height = bot[0] - top[0]
-            width = bot[1] - top[1]
+            width = se[0] - nw[0]
+            height = se[1] - nw[1]
             xstep = np.int(window[0]*(1-overlap[0]))
             ystep = np.int(window[1]*(1-overlap[1]))
             xwins = np.int(width/xstep) - 1
@@ -114,8 +121,8 @@ class Slicer():
             window_list = []
             for x in range(xwins):
                 for y in range(ywins):
-                    x_beg = x * xstep + top[0]
+                    x_beg = x * xstep + nw[0]
                     x_end = x_beg + window[0]
-                    y_beg = y * ystep + top[1]
+                    y_beg = y * ystep + nw[1]
                     y_end = y_beg + window[1]
                     yield ((x_beg, y_beg), (x_end, y_end))

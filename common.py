@@ -100,8 +100,8 @@ def show_image(ims, ncols=1, nrows=1, window_title=None, titles=None, cmaps=None
             axes.imshow(ims)
         if titles is not None:
             axes.set_title(titles)
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
+        axes.get_xaxis().set_visible(False)
+        axes.get_yaxis().set_visible(False)
     elif ncols == 1 or nrows == 1:
         n = max(ncols, nrows)
         for i in range(n):

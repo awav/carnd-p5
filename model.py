@@ -29,6 +29,7 @@ import os
 from tensorflow.contrib.tensorboard.plugins import projector
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC, SVC
 from xgboost.sklearn import XGBClassifier
 
 import importlib
@@ -40,8 +41,10 @@ from features import Features
 
 class VehiclesDataset():
     def __init__(self, load=True,
-                 vehicles=["data/vehicles/", "data/OwnCollection/vehicles/"],
-                 nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
+                 #vehicles=["data/vehicles/", "data/OwnCollection/vehicles/"],
+                 #nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
+                 vehicles=["data/vehicles/"],
+                 nonvehicles=["data/non-vehicles/"],
                  color='HSV'):
         if load == True:
             self.color = color
@@ -87,9 +90,12 @@ class VehiclesDataset():
              pickle.dump(self.__dict__, fd)
 
 class CarModel():
-    def __init__(self):
+    def __init__(self, mode='svm'):
+        if mode != 'svm' and mode != 'xgboost':
+            raise ValueError('Unknown mode for CarModel')
         self._f = Features()
         self._model = None
+        self._mode = mode
         self.input_shape = None
     def prepare(self, data, mode='standard'):
         self.input_shape = data.x_orig[0].shape
@@ -108,7 +114,7 @@ class CarModel():
     def predict(self, im):
         f = self._f
         pred = self._model.predict(f.normalize(f.extract(np.array([im]))))
-        return bool(pred[0])
+        return pred[0]
     def _split_data(self, x, y, test_size=0.2, random_state=101):
         xtr, xt, ytr, yt = train_test_split(x, y, test_size=test_size, random_state=random_state)
         return (xtr, ytr), (xt, yt)
@@ -121,26 +127,33 @@ class CarModel():
     def _train(self, train, test, random_state=101, show=False):
         x, y = train
         xtest, ytest = test
-        self._model = XGBClassifier(
-                          learning_rate=0.1,
-                          n_estimators=150,
-                          max_depth=5,
-                          min_child_weight=1,
-                          gamma=0,
-                          subsample=0.8,
-                          colsample_bytree=0.8,
-                          objective='binary:logistic',
-                          nthread=4,
-                          scale_pos_weight=1,
-                          seed=random_state)
-        self._model.fit(x, y, eval_metric='auc')
+        if self._mode == 'xgboost':
+            self._model = XGBClassifier(
+                              learning_rate=0.1,
+                              n_estimators=150,
+                              max_depth=5,
+                              min_child_weight=1,
+                              gamma=0,
+                              subsample=0.8,
+                              colsample_bytree=0.8,
+                              objective='binary:logistic',
+                              nthread=4,
+                              scale_pos_weight=1,
+                              seed=random_state)
+            self._model.fit(x, y, eval_metric='auc')
+        else:
+            self._model = LinearSVC(max_iter=25000, penalty='l2', random_state=random_state)
+            #self._model = SVC(kernel='rbf', max_iter=25000, random_state=random_state)
+            #self._model = SVC(max_iter=25000, random_state=random_state)
+            self._model.fit(x, y)
         pred = self._model.predict(xtest)
-        pred_prob = self._model.predict_proba(xtest)
-        ytest_hot = self._one_hot_encode(ytest)
         acc_msg = "Test accuracy: {0:.05f}"
-        auc_msg = "AUC score: {0:.05f}"
         print(acc_msg.format(metrics.accuracy_score(ytest, pred)))
-        print(auc_msg.format(metrics.roc_auc_score(ytest_hot, pred_prob)))
+        if self._mode == 'xgboost':
+                pred_prob = self._model.predict_proba(xtest)
+                ytest_hot = self._one_hot_encode(ytest)
+                auc_msg = "AUC score: {0:.05f}"
+                print(auc_msg.format(metrics.roc_auc_score(ytest_hot, pred_prob)))
         if show == True:
             importance = pd.Series(xgb.booster().get_fscore()).sort_values(ascending=False)
             importance.plot(kind='bar', title='Feature Importance')
