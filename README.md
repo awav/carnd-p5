@@ -428,7 +428,7 @@ class FrameVehiclePipeline():
 
 #### Optimization
 
-I have tried to optimize the way of searching wrong detected cars and lost boxes by introducing static heatmap. I weighted each pixel after processing. In fact, I applied to `Exponential Moving Average` to heatmap pixels to smooth it for next interation, so that previous car's pixels could contribute to box searching in next frame. But I didn't get a good results on it. You can check video and find that car boxing is shaky.
+I have tried to optimize the way of searching wrong detected cars and lost boxes by introducing static heatmap. I weighted each pixel after processing. In fact, I applied to `Exponential Moving Average` to heatmap pixels to smooth it for next interation, so that previous car's pixels could contribute to box searching in next frame. But I didn't get a good results on it. You can check video and find that car boxing is still shaky.
 
 ```python
 ## track.py
@@ -472,3 +472,23 @@ def _reset_heatmap(self):
     self._heatmap[:] *= 0.3
 ```
 
+Examples of boxes:
+
+![alt text](project/detected-cars.png)
+
+### Video link
+
+[Here you can find bunch of videos](https://drive.google.com/open?id=0B90SlGxx-BAeMW1hS2liaFM4TW8)
+
+### Discussion
+
+I stumbled upon with multiple issues:
+
+0. Overall performance really annoying and prevents proper testing. E.g. lowest time that I have got is 1.18s per iteration.
+1. It is really hard to find approapriate sizes of windows. I believe it can be done by perspective calculation but I have some concerns that it will be wasting of time.
+2. The balance between number of windows and overlapping size is very fragile and affects efficiency a loot.
+3. Despite the fact that I have got really impressive testing accuracy numbers even after Grid Search tuning of paramerters, I still have a lot of artifacts in video.
+
+### Conclusion
+
+Unfortunately, for me it was worst experience in Udacity SDC course. After that project, I have realized that it's really hard to achieve results in short period of time even with good tools, like OpenCV. There are too much room for making a mistake - lots of parameters and dependencies between sub-systems.  I guess I need to devote more time to reseach this problem. Definitely, I would like to apply Deep Learning approach for detecting cars and more advanced approach for tracking them like EKF (Extended Kalman Filter), Particles Filter and Faster-RNN.
