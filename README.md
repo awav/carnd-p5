@@ -88,6 +88,7 @@ I used HOG features, spatial binning and color histograms altogether. All input 
 In fact, I deliberaterly tried to increase number of features, because of classifcation models which I trained to solve this challenge. It was very important to to have a lot of features as input for linear SVM and xgboost.
 
 ```python
+## features.py
 ass Features:
     def __init__(self):
         self._scaler = None
