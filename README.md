@@ -195,10 +195,15 @@ class Features:
 Examples of HOG features
 
 * HOG values of Hue channel:
+
 ![alt text](project/hog-hue.png)
+
 * HOG values of Saturation channel:
+
 ![alt text](project/hog-saturation.png)
+
 * HOG values of Value channel:
+
 ![alt text](project/hog-value.png)
 
 To understand the data, it is very helpful to find embeddings for the dataset. I used standard approaches which help to squash features into lower dimentions, so that the dataset could be visualized in 3D or 2D dimension. If you look at PCA and t-SNE gifs you will find orange and blue clouds of dots are more or less separable. The orange and blue dots represent `non-vehicle` and `vehicle` respectively. PCA gives quite poor result though, but t-SNE clearly makes great job. It shows that updated dataset has patterns: there are sub-clusters in vehicles and one big blob of non-vehicles.
