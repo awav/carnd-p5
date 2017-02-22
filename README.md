@@ -403,8 +403,8 @@ But after tunning it became better:
 
 Here is shown the code of frame processing pipeline:
 - `process` function gets RGB frame
-- `process` function undistorts the frame
-- convertes frame HSV color map
+- undistorts the frame
+- convertes frame to HSV color map
 - updates cached heatmap
 - using `sklearn` label function to searches boxes of cars
 - draws boxes in the frame
@@ -425,4 +425,5 @@ class FrameVehiclePipeline():
         self._reset_heatmap()
         return self._draw_car_boxes(orig, show=show)
 ```
+
 
