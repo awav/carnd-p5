@@ -201,3 +201,6 @@ t-SNE applied to extracted feature dataset (including HOGs, spatial bins, color 
 ![alt text](project/tsne.gif)
 
 The code for embeddings you can find in `VehicleDataset` class.
+
+### Feature extraction
+#### Criteria: explain how (and identify where in your code) you extracted HOG features from the training images. Explain how you settled on your final choice of HOG parameters.
