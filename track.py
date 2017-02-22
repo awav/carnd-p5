@@ -65,15 +65,20 @@ class FrameVehiclePipeline():
         shape = self._model.input_shape
         if show == True:
             cpy = cv.cvtColor(im, cv.COLOR_HSV2RGB)
+        _show=False
+        if show == True
+            _show = True
         for nw, se in self._slicer.wins:
             ys, ye = nw[1], se[1]
             xs, xe = nw[0], se[0]
             #print(nw, se)
-            car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape), show=show)
+            car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape), show=_show)
+            _show = False
             if car == 1:
                 self._heatmap[ys:ye,xs:xe] += 1
                 if show == True:
                     cpy = cv.rectangle(cpy, nw, se, (0,0,255), 2)
+                    common.show_image(im[ys:ye,xs:xe,:], titles='resized-car')
         if show == True:
             #zeros = np.zeros(self._heatmap.shape)
             #hm = np.dstack([self._heatmap, zeros, zeros])
