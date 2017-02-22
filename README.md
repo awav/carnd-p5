@@ -192,7 +192,7 @@ ass Features:
         return np.concatenate([chan1, chan2, chan3])
 ```
 
-To understand the data, it is very userful to find embeddings of the dataset of features. I used standard approaches which help to squash features into lower dimentions, so that the dataset could be visualized in 3D or 2D dimension.
+To understand the data, it is very helpful to find embeddings for the dataset. I used standard approaches which help to squash features into lower dimentions, so that the dataset could be visualized in 3D or 2D dimension. If you look at PCA and t-SNE gifs you will find orange and blue clouds of dots are more or less separable. The orange and blue dots represent `non-vehicle` and `vehicle` respectively. PCA gives quite poor result though, but t-SNE clearly makes great job. It shows that updated dataset has patterns: there are sub-clusters in vehicles and one big blob of non-vehicles.
 
 PCA applied to extracted feature dataset (including HOGs, spatial bins, color histogram):
 ![alt text](project/pca.gif)
@@ -200,4 +200,4 @@ PCA applied to extracted feature dataset (including HOGs, spatial bins, color hi
 t-SNE applied to extracted feature dataset (including HOGs, spatial bins, color histogram) with perplexity of 80 and epsilon 10, known as learning rate as well:
 ![alt text](project/tsne.gif)
 
-
+The code for embeddings you can find in `VehicleDataset` class.
