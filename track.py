@@ -47,15 +47,15 @@ class FrameVehiclePipeline():
         self._reset_heatmap()
         return self._draw_car_boxes(orig, show=show)
     def slice_params(self, height=720, width=1280):
-        n = 4
-        ws = [96,128,160,192]
-        nw_y = [400,400,430,460]
-        nw_xs = [0,0,0,0]
-        se_ys = [500,500,550,580]
-        #ws = [96,128,160]
-        #nw_y = [400,400,400]
-        #nw_xs = [100,0,0]
-        #se_ys = [nw_y[i] + ws[i] for i in range(n)]
+        n = 3
+        #ws = [96,128,160,192]
+        #nw_y = [400,400,430,460]
+        #nw_xs = [0,0,0,0]
+        #se_ys = [500,500,550,580]
+        ws = [96,128,160]
+        nw_y = [400,400,400]
+        nw_xs = [100,0,0]
+        se_ys = [nw_y[i] + ws[i] for i in range(n)]
 
         boxes = [((nw_xs[i], nw_y[i]), (width-nw_xs[i], se_ys[i])) for i in range(n)]
         return {'boxes': boxes,

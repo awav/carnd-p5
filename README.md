@@ -324,3 +324,56 @@ class CarModel():
 
 ```
 
+### Sliding Window Search
+#### Criteria: Describe how (and identify where in your code) you implemented a sliding window search. How did you decide what scales to search and how much to overlap windows?
+
+I wrote a slicer class which generates windows list. When the hanler for video stream is the windows for slicing are generated.
+
+```python
+### track.py
+class Slicer():
+    def __init__(self, **kwargs):
+        self.wins = [w for w in self._gen_windows(**kwargs)]
+    def _gen_windows(self,
+                     boxes=[((0, 0),(1280,720))],
+                     windows=[(64, 64)],
+                     overlaps=[(0.5, 0.5)]):
+        n = len(boxes)
+        assert(n == len(windows) and n == len(overlaps))
+        for i in range(n):
+            nw, se = boxes[i]
+            window = windows[i]
+            overlap = overlaps[i]
+            ##
+            width = se[0] - nw[0]
+            height = se[1] - nw[1]
+            xstep = np.int(window[0]*(1-overlap[0]))
+            ystep = np.int(window[1]*(1-overlap[1]))
+            xwins = np.int(width/xstep) - 1
+            ywins = np.int(height/ystep) - 1
+            window_list = []
+            for x in range(xwins):
+                for y in range(ywins):
+                    x_beg = x * xstep + nw[0]
+                    x_end = x_beg + window[0]
+                    y_beg = y * ystep + nw[1]
+                    y_end = y_beg + window[1]
+                    yield ((x_beg, y_beg), (x_end, y_end))
+```
+
+This is params which I used for Slicer generator:
+
+```python
+    def slice_params(self, height=720, width=1280):
+        n = 3
+        ws = [96,128,160]
+        nw_y = [400,400,400]
+        nw_xs = [100,0,0]
+        se_ys = [nw_y[i] + ws[i] for i in range(n)]
+        boxes = [((nw_xs[i], nw_y[i]), (width-nw_xs[i], se_ys[i])) for i in range(n)]
+        return {'boxes': boxes,
+                'windows': list(zip(ws, ws)),
+                'overlaps': [(0.75, 0.75)] * n}
+```
+
+If I tried to generate more windows the processing time of the video increased drastically and number of false positives as well. So, I decided to find a balance between number of windows and 
