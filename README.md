@@ -1,19 +1,6 @@
 # Vehicle Detection
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-![alt text](project/pca.gif)
-![alt text](project/tsne.gif)
-
-In this project, your goal is to write a software pipeline to detect vehicles in a video (start with the test_video.mp4 and later implement on full project_video.mp4), but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
-
-Creating a great writeup:
----
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
-
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
-
-You can submit your writeup in markdown or use another method and submit a pdf instead.
-
 The Project
 ---
 
@@ -26,10 +13,190 @@ The goals / steps of this project are the following:
 * Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
-Here are links to the labeled data for [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) examples to train your classifier.  These example images come from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and examples extracted from the project video itself.   You are welcome and encouraged to take advantage of the recently released [Udacity labeled dataset](https://github.com/udacity/self-driving-car/tree/master/annotations) to augment your training data.  
+## Feature extraction
+### Criteria: explain how (and identify where in your code) you extracted HOG features from the training images. Explain how you settled on your final choice of HOG parameters.
 
-Some example images for testing your pipeline on single frames are located in the `test_images` folder.  To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `ouput_images`, and include them in your writeup for the project by describing what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
+I used data provided by Udacity for [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) dataset. I started with code that loads this datasets and represents it in convenient way for futher steps. So, I wrote a class which loads data and keeps `X`s and `Y`s for futher model training. As you can see I can save and load an instace of this class for later usage. It is very helpful when you are playing with different datasets.
 
-**As an optional challenge** Once you have a working pipeline for vehicle detection, add in your lane-finding algorithm from the last project to do simultaneous lane-finding and vehicle detection!
+```python
+### model.py
+ass VehiclesDataset():
+    def __init__(self, load=True,
+                 #vehicles=["data/vehicles/", "data/OwnCollection/vehicles/"],
+                 #nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
+                 vehicles=["data/vehicles/"],
+                 nonvehicles=["data/non-vehicles/"],
+                 color='HSV'):
+        if load == True:
+            self.color = color
+            veh = common.load_images(*vehicles, color=color)
+            nonveh = common.load_images(*nonvehicles, color=color)
+            veh_lbl = np.array([1] * veh.shape[0])
+            nonveh_lbl = np.array([0] * nonveh.shape[0])
+            self.x_orig = np.vstack([veh, nonveh])
+            self.y_orig = np.concatenate([veh_lbl, nonveh_lbl])
+        else:
+            self.x_orig = None
+            self.y_orig = None
+        self.x = None
+    def put_features(self, features):
+        self.x = features
+    def embeddings(self, log_dir='tflog'):
+        embedding_var = tf.Variable(self.x, name='vehicles')
+        step = tf.Variable(0, trainable=False, name='global_step')
+        metadata = os.path.join(log_dir, 'metadata.tsv')
+        with open(metadata, 'w') as metadata_file:
+            for i in self.y_orig:
+                if i == 0:
+                    lbl = 'non-vehicle'
+                elif i == 1:
+                    lbl = 'vehicle'
+                metadata_file.write(lbl + '\n')
+        with tf.Session() as sess:
+            init = tf.global_variables_initializer()
+            sess.run(init)
+            saver = tf.train.Saver()
+            saver.save(sess, os.path.join(log_dir, "model.ckpt"), step)
+            summary_writer = tf.summary.FileWriter(log_dir)
+            config = projector.ProjectorConfig()
+            embedding = config.embeddings.add()
+            embedding.tensor_name = embedding_var.name
+            embedding.metadata_path = metadata
+            projector.visualize_embeddings(summary_writer, config)
+    def load(self, filename='data/dataset.p'):
+        with open(filename, 'rb') as fd:
+             self.__dict__ = pickle.load(fd)
+    def save(self, filename='data/dataset.p'):
+        with open(filename, 'wb') as fd:
+             pickle.dump(self.__dict__, fd)
+```
 
-**If you're feeling ambitious** (also totally optional though), don't stop there!  We encourage you to go out and take video of your own, and show us how you would implement this project on a new video!
+To extract features I used stadard solution basically provided by Udacity in the course. I modified a bit interface and optimized the way how they are computed for whole dataset.
+
+I used HOG features, spatial binning and color histograms altogether. All input images are converted into HSV color scheme before feature extracting. Let's take a look at default arguments and paramerters for these feature extractors:
+
+* Hog params:
+   - use all channels of an inputs image
+   - number of orientations is 8
+   - cell_size is 
+   - block_size is 2
+* Image bins params:
+   - number of bins is 32
+* Color histograms params:
+   - number of bins is 32
+
+In fact, I deliberaterly tried to increase number of features, because of classifcation models which I trained to solve this challenge. It was very important to to have a lot of features as input for linear SVM and xgboost.
+
+```python
+ass Features:
+    def __init__(self):
+        self._scaler = None
+    def fit_scaler(self, x, mode='standard'):
+        """ Initializes scaler.
+        Args:
+            x: input feature vectors
+            mode: 'standard' or 'minmax'
+        """
+        if mode == 'standard':
+            self._scaler = StandardScaler().fit(x)
+        elif mode == 'minmax':
+            self._scaler = MinMaxScaler(feature_range=(-1,1)).fit(x)
+        else:
+            raise ValueError('Wrong mode passed as argument')
+    def normalize(self, x):
+        if self._scaler is None:
+            raise ValueError("Scaler is not initialized")
+        return self._scaler.transform(x)
+    def extract(self, ims, **kwargs):
+        """ Extract features from images with three channels.
+        """
+        n = ims.shape[0]
+        cls = self.__class__
+        return np.array([cls._extract_features(ims[i], **kwargs) for i in range(n)],
+                        dtype=np.float32)
+    @classmethod
+    def _extract_features(cls, im,
+               inc_hog_channel='all', inc_color_hist=True,
+               inc_spatial_bins=True, orients=8,
+               cell_size=8, block_size=2,
+               vector=True, dst_size=32,
+               bins=32, binrange=(0,256),
+               show=False):
+        fhog, fcolor, fspatial = [], [], []
+        if inc_hog_channel != -1:
+            num_chan = im.shape[2]
+            if inc_hog_channel.lower() == 'all':
+                fhog = np.ravel([cls.hog_features(im[:,:,i], orients, cell_size, block_size, vector)
+                                 for i in range(num_chan)])
+            else:
+                i = inc_hog_channel
+                if inc_hog_channel >= num_chan:
+                    raise ValueError("Access to non-existing channel {0}".format(i))
+                fhog = cls.hog_features(im[:,:,i], orients, cell_size, block_size, vector)
+        if inc_color_hist:
+            fcolor = cls.color_hist_features(im, bins, binrange)
+        if inc_spatial_bins:
+            fspatial = cls.binspatial_features(im, dst_size)
+        return np.concatenate([np.float32(fhog), np.float32(fcolor), np.float32(fspatial)])
+    @staticmethod
+    def hog_features(im, orients=8, cell_size=8, block_size=2, vector=True, show=False):
+        if show == True:
+            features, im_hog = hog(im, orientations=orients,
+                                   pixels_per_cell=(cell_size,)*2,
+                                   cells_per_block=(block_size,)*2,
+                                   feature_vector=vector,
+                                   transform_sqrt=True,
+                                   visualise=show)
+            show_image([im, im_hog], ncols=2,
+                       window_title='HOG',
+                       titles=['original', 'hog'],
+                       cmaps=['gray', 'gray'])
+        else:
+            features = hog(im, orientations=orients,
+                           pixels_per_cell=(cell_size,)*2,
+                           cells_per_block=(block_size,)*2,
+                           feature_vector=vector,
+                           transform_sqrt=True,
+                           visualise=show)
+        return features
+    @staticmethod
+    def binspatial_features(im, dst_size=16, show=False):
+        features = cv.resize(im, (dst_size,)*2)
+        if show == True:
+            show_image([im, features], ncols=2,
+                       window_title='Bin Spatial',
+                       titles=['original', 'resized'])
+        return features.ravel()
+    @staticmethod
+    def color_hist_features(im, bins=32, binrange=(0,256), show=False):
+        chan1 = np.histogram(im[:,:,0], bins=bins, range=binrange)[0]
+        chan2 = np.histogram(im[:,:,1], bins=bins, range=binrange)[0]
+        chan3 = np.histogram(im[:,:,2], bins=bins, range=binrange)[0]
+        if show == True:
+            fig, axes = plt.subplots(nrows=4, squeeze=True)
+            fig.canvas.set_window_title('Histograms')
+            x = range(chan1.shape[0])
+            axes[0].imshow(im)
+            axes[0].set_title('image')
+            axes[0].get_xaxis().set_visible(False)
+            axes[0].get_yaxis().set_visible(False)
+            axes[1].hist(x, chan1)
+            axes[1].set_title('chan_1')
+            axes[2].hist(x, chan1)
+            axes[2].set_title('chan_2')
+            axes[3].hist(x, chan1)
+            axes[3].set_title('chan_3')
+            fig.tight_layout()
+            fig.subplots_adjust(wspace=0, left=-0.1)
+        return np.concatenate([chan1, chan2, chan3])
+```
+
+To understand the data, it is very userful to find embeddings of the dataset of features. I used standard approaches which help to squash features into lower dimentions, so that the dataset could be visualized in 3D or 2D dimension.
+
+PCA applied to extracted feature dataset (including HOGs, spatial bins, color histogram):
+![alt text](project/pca.gif)
+
+t-SNE applied to extracted feature dataset (including HOGs, spatial bins, color histogram) with perplexity of 80 and epsilon 10, known as learning rate as well:
+![alt text](project/tsne.gif)
+
+
