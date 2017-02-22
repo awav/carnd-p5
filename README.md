@@ -89,7 +89,7 @@ In fact, I deliberaterly tried to increase number of features, because of classi
 
 ```python
 ## features.py
-ass Features:
+class Features:
     def __init__(self):
         self._scaler = None
     def fit_scaler(self, x, mode='standard'):
@@ -205,9 +205,9 @@ The code for embeddings you can find in `VehicleDataset` class.
 ### Model training
 #### Criteria: The HOG features extracted from the training data have been used to train a classifier, could be SVM, Decision Tree or other. Features should be scaled to zero mean and unit variance before training the classifier.
 
-I inclined to use `XGBoost` to classify vehicles, but during testing I found that `SVM` is much faster in training and in value predicting. Also, `SVM` are more stable despite the fact that `XGBoost` was getting better accuracy on testing data.
+I inclined to use `XGBoost` to classify vehicles, but during testing I found that `SVM` is much faster in training and in value predicting. Also, `SVM` are more stable despite the fact that `XGBoost` was getting better accuracy on testing data. Comparing of `LinearSVM` with `RBF-SVM` didn't lead to happy results, the reason for that is huge number of features. Usually, `RBF-SVM` gets better results when number of dataset samples is bigger than number of predictors, but in our case we have enough degrees of freedom to build robust classifier based on `Linear SVM`.
 
-The one benefit that I got from using XGBoost is that I got a distribution of importance scores for features. All top 10 values are HOG values and it means that HOG values contribute a lot to classification. For training SVM 
+The one benefit that I got from using XGBoost is that I got a distribution of importance scores for features. All top 10 values are HOG features. It means that HOG values contribute a lot to the final decision on inputs.
 
 #### XGBoost resuls
 
@@ -235,8 +235,87 @@ AUC score: 0.99994
 Test accuracy: 0.99747
 ```
 
-The code below summarizes training and predicting processes for chosen model:
+The code below summarizes training and predicting processes for chosen model. This class can be saved and loaded by demand to and from disk respectively.
 
 ```python
+## model.py
+class CarModel():
+    def __init__(self, mode='svm'):
+        if mode != 'svm' and mode != 'xgboost':
+            raise ValueError('Unknown mode for CarModel')
+        self._f = Features()
+        self._model = None
+        self._mode = mode
+        self.input_shape = None
+    def prepare(self, data, mode='standard'):
+        self.input_shape = data.x_orig[0].shape
+        features = self._f.extract(data.x_orig)
+        self._f.fit_scaler(features, mode=mode)
+        x = self._f.normalize(features)
+        data.put_features(x)
+        return data
+    def fit(self, data, random_state=101, show=True):
+        if data.x is None:
+            raise ValueError('Dataset does not have input values')
+        x = data.x
+        y = data.y_orig
+        train, test = self._split_data(x, y)
+        self._train(train, test, show=show)
+    def predict(self, im, show=False):
+        f = self._f
+        pred = self._model.predict(f.normalize(f.extract(np.array([im]), show=show)))
+        return pred[0]
+    def _split_data(self, x, y, test_size=0.2, random_state=101):
+        xtr, xt, ytr, yt = train_test_split(x, y, test_size=test_size, random_state=random_state)
+        return (xtr, ytr), (xt, yt)
+    def _one_hot_encode(self, y):
+        width = np.unique(y).shape[0]
+        height = y.shape[0]
+        one = np.zeros((height, width), dtype=np.int32)
+        one[range(height), y] = 1
+        return one
+    def _train(self, train, test, random_state=101, show=False):
+        x, y = train
+        xtest, ytest = test
+        if self._mode == 'xgboost':
+            self._model = XGBClassifier(
+                              learning_rate=0.1,
+                              n_estimators=150,
+                              max_depth=5,
+                              min_child_weight=1,
+                              gamma=0,
+                              subsample=0.8,
+                              colsample_bytree=0.8,
+                              objective='binary:logistic',
+                              nthread=4,
+                              scale_pos_weight=1,
+                              seed=random_state)
+            self._model.fit(x, y, eval_metric='auc')
+        else:
+            self._model = LinearSVC(max_iter=25000, penalty='l2', random_state=random_state)
+            #self._model = SVC(kernel='rbf', max_iter=25000, random_state=random_state)
+            #self._model = SVC(max_iter=25000, random_state=random_state)
+            self._model.fit(x, y)
+        pred = self._model.predict(xtest)
+        acc_msg = "Test accuracy: {0:.05f}"
+        print(acc_msg.format(metrics.accuracy_score(ytest, pred)))
+        if self._mode == 'xgboost':
+                pred_prob = self._model.predict_proba(xtest)
+                ytest_hot = self._one_hot_encode(ytest)
+                auc_msg = "AUC score: {0:.05f}"
+                print(auc_msg.format(metrics.roc_auc_score(ytest_hot, pred_prob)))
+        if self._mode == 'xgboost' and show == True:
+            importance = pd.Series(self._model.booster().get_fscore()).sort_values(ascending=False)
+            importance.plot(kind='bar', title='Feature Importance')
+            plt.show()
+            print(importance[:10])
+    def load(self, filename='data/model.p'):
+        with open(filename, 'rb') as fd:
+             self.__dict__ = pickle.load(fd)
+    def save(self, filename='data/model.p'):
+        with open(filename, 'wb') as fd:
+             pickle.dump(self.__dict__, fd)
 
 ```
+
+
