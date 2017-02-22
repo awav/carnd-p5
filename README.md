@@ -202,5 +202,38 @@ t-SNE applied to extracted feature dataset (including HOGs, spatial bins, color 
 
 The code for embeddings you can find in `VehicleDataset` class.
 
-### Feature extraction
-#### Criteria: explain how (and identify where in your code) you extracted HOG features from the training images. Explain how you settled on your final choice of HOG parameters.
+### Model training
+#### Criteria: The HOG features extracted from the training data have been used to train a classifier, could be SVM, Decision Tree or other. Features should be scaled to zero mean and unit variance before training the classifier.
+
+I inclined to use XGBoost to classify vehicles, but during testing I found that SVM is much faster in training and in value predicting. Also, SVM are more stable despite the fact that XGBoost was getting better accuracy on testing data.
+
+The one benefit that I got from using XGBoost is that I got a distribution of importance scores for features. All top 10 values are HOG values and it means that it contributes a lot to classification. For train SVM 
+
+#### XGBoost resuls
+
+```
+Test accuracy: 0.99747
+AUC score: 0.99994
+```
+
+| Feature index | Importance score |
+|---------------|------------------|
+|  4715         | 93               |             
+|  4726         | 80               |
+|  4767         | 74               |
+|  4799         | 39               |
+|  4798         | 31               |
+|  4797         | 26               |
+|  4775         | 24               |
+|  4706         | 22               |
+|  4713         | 22               |
+|  3393         | 20               |
+
+#### SVM results
+
+```
+Test accuracy: 0.99747
+```
+
+
+

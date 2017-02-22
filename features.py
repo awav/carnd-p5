@@ -67,7 +67,8 @@ class Features:
         if inc_hog_channel != -1:
             num_chan = im.shape[2]
             if inc_hog_channel.lower() == 'all':
-                fhog = np.ravel([cls.hog_features(im[:,:,i], orients, cell_size, block_size, vector)
+                fhog = np.ravel([cls.hog_features(im[:,:,i], orients, cell_size,
+                                                  block_size, vector, show=show)
                                  for i in range(num_chan)])
             else:
                 i = inc_hog_channel
@@ -75,9 +76,9 @@ class Features:
                     raise ValueError("Access to non-existing channel {0}".format(i))
                 fhog = cls.hog_features(im[:,:,i], orients, cell_size, block_size, vector)
         if inc_color_hist:
-            fcolor = cls.color_hist_features(im, bins, binrange)
+            fcolor = cls.color_hist_features(im, bins, binrange, show=show)
         if inc_spatial_bins:
-            fspatial = cls.binspatial_features(im, dst_size)
+            fspatial = cls.binspatial_features(im, dst_size, show=show)
         return np.concatenate([np.float32(fhog), np.float32(fcolor), np.float32(fspatial)])
     @staticmethod
     def hog_features(im, orients=8, cell_size=8, block_size=2, vector=True, show=False):

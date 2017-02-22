@@ -34,17 +34,17 @@ from xgboost.sklearn import XGBClassifier
 
 import importlib
 
-#importlib.reload(features)
+importlib.reload(features)
 importlib.reload(common)
 
 from features import Features
 
 class VehiclesDataset():
     def __init__(self, load=True,
-                 #vehicles=["data/vehicles/", "data/OwnCollection/vehicles/"],
-                 #nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
-                 vehicles=["data/vehicles/"],
-                 nonvehicles=["data/non-vehicles/"],
+                 vehicles=["data/vehicles/", "data/OwnCollection/vehicles/"],
+                 nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
+                 #vehicles=["data/vehicles/"],
+                 #nonvehicles=["data/non-vehicles/"],
                  color='HSV'):
         if load == True:
             self.color = color
@@ -111,9 +111,9 @@ class CarModel():
         y = data.y_orig
         train, test = self._split_data(x, y)
         self._train(train, test, show=show)
-    def predict(self, im):
+    def predict(self, im, show=False):
         f = self._f
-        pred = self._model.predict(f.normalize(f.extract(np.array([im]))))
+        pred = self._model.predict(f.normalize(f.extract(np.array([im]), show=show)))
         return pred[0]
     def _split_data(self, x, y, test_size=0.2, random_state=101):
         xtr, xt, ytr, yt = train_test_split(x, y, test_size=test_size, random_state=random_state)
