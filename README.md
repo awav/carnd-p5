@@ -397,7 +397,7 @@ Sometimes I was getting even ridiculous results like that:
 
 ![alt text](project/funny.png)
 
-But after tunning I came better:
+But after tunning it became better:
 
 ![alt text](project/heatmap.png)
 
