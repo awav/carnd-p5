@@ -104,13 +104,13 @@ class CarModel():
         x = self._f.normalize(features)
         data.put_features(x)
         return data
-    def fit(self, data, random_state=101):
+    def fit(self, data, random_state=101, show=True):
         if data.x is None:
             raise ValueError('Dataset does not have input values')
         x = data.x
         y = data.y_orig
         train, test = self._split_data(x, y)
-        self._train(train, test, show=False)
+        self._train(train, test, show=show)
     def predict(self, im):
         f = self._f
         pred = self._model.predict(f.normalize(f.extract(np.array([im]))))
@@ -155,9 +155,10 @@ class CarModel():
                 auc_msg = "AUC score: {0:.05f}"
                 print(auc_msg.format(metrics.roc_auc_score(ytest_hot, pred_prob)))
         if show == True:
-            importance = pd.Series(xgb.booster().get_fscore()).sort_values(ascending=False)
+            importance = pd.Series(self._model.booster().get_fscore()).sort_values(ascending=False)
             importance.plot(kind='bar', title='Feature Importance')
             plt.show()
+            print(importance[:10])
     def load(self, filename='data/model.p'):
         with open(filename, 'rb') as fd:
              self.__dict__ = pickle.load(fd)
