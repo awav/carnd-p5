@@ -340,6 +340,7 @@ class CarModel():
 
 ### Sliding Window Search
 #### Criteria: Describe how (and identify where in your code) you implemented a sliding window search. How did you decide what scales to search and how much to overlap windows?
+#### Criteria: Show some examples of test images to demonstrate how your pipeline is working. How did you optimize the performance of your classifier?
 
 I wrote a slicer class which generates windows list. When the hanler for video stream is the windows for slicing are generated.
 
@@ -391,3 +392,31 @@ Below you can see parameters which I used for Slicer generator:
 ```
 
 If I tried to generate more windows the processing time of the video increased drastically and number of false positives as well. So, I decided to find a balance between number of windows and quality of getting results.
+
+Sometimes I was getting even ridiculous results like that:
+
+![alt text](project/funny.png)
+
+But after tunning I came better:
+
+![alt text](project/heatmap.png)
+
+Here is shown the code of frame processing pipeline:
+
+```
+class FrameVehiclePipeline():
+    def __init__(self, classifier, shape=(720, 1280)):
+        if classifier.__class__ is not model.CarModel:
+           raise ValueError('You can pass only CarModel argument')
+        self._model = classifier
+        self._slicer = Slicer(**(self.slice_params()))
+        self._heatmap = np.zeros(shape)
+        self._labels = None
+    def process(self, orig, show=False):
+        im = cv.cvtColor(clb.undistort(orig, show=show), cv.COLOR_RGB2HSV)
+        self._find_cars_heatmap(im, show=show)
+        self._find_cars_boxes(show=show)
+        self._reset_heatmap()
+        return self._draw_car_boxes(orig, show=show)
+```
+
