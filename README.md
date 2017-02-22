@@ -197,7 +197,7 @@ To understand the data, it is very helpful to find embeddings for the dataset. I
 PCA applied to extracted feature dataset (including HOGs, spatial bins, color histogram):
 ![alt text](project/pca.gif)
 
-t-SNE applied to extracted feature dataset (including HOGs, spatial bins, color histogram) with perplexity of 80 and epsilon 10, known as learning rate as well:
+t-SNE applied to extracted feature dataset (including HOGs, spatial bins, color histogram) with `perplexity=80` and `epsilon=10`, known as learning rate as well:
 ![alt text](project/tsne.gif)
 
 The code for embeddings you can find in `VehicleDataset` class.
