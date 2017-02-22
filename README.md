@@ -375,7 +375,7 @@ class Slicer():
                     yield ((x_beg, y_beg), (x_end, y_end))
 ```
 
-This is params which I used for Slicer generator:
+Below you can see parameters which I used for Slicer generator:
 
 ```python
     def slice_params(self, height=720, width=1280):
@@ -390,4 +390,4 @@ This is params which I used for Slicer generator:
                 'overlaps': [(0.75, 0.75)] * n}
 ```
 
-If I tried to generate more windows the processing time of the video increased drastically and number of false positives as well. So, I decided to find a balance between number of windows and 
+If I tried to generate more windows the processing time of the video increased drastically and number of false positives as well. So, I decided to find a balance between number of windows and quality of getting results.
