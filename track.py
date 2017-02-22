@@ -41,28 +41,26 @@ class FrameVehiclePipeline():
         self._heatmap = np.zeros(shape)
         self._labels = None
     def process(self, orig, show=False):
-        orig = clb.undistort(orig, show=show)
-        im = cv.cvtColor(orig, cv.COLOR_RGB2HSV)
+        im = cv.cvtColor(clb.undistort(orig, show=show), cv.COLOR_RGB2HSV)
         self._find_cars_heatmap(im, show=show)
         self._find_cars_boxes(show=show)
         self._reset_heatmap()
         return self._draw_car_boxes(orig, show=show)
     def slice_params(self, height=720, width=1280):
         n = 4
-
-        #ws = [96,128,160,192]
-        #nw_y = [400,400,430,460]
-        #nw_xs = [0,0,0,0]
-        #se_ys = [500,500,550,580]
-
         ws = [96,128,160,192]
-        nw_y = [400,400,400,400]
-        nw_xs = [100,0,0,0]
-        se_ys = [nw_y[i] + 1.5*ws[i] for i in range(n)]
+        nw_y = [400,400,430,460]
+        nw_xs = [0,0,0,0]
+        se_ys = [500,500,550,580]
+        #ws = [96,128,160]
+        #nw_y = [400,400,400]
+        #nw_xs = [100,0,0]
+        #se_ys = [nw_y[i] + ws[i] for i in range(n)]
+
         boxes = [((nw_xs[i], nw_y[i]), (width-nw_xs[i], se_ys[i])) for i in range(n)]
         return {'boxes': boxes,
                 'windows': list(zip(ws, ws)),
-                'overlaps': [(0.75, 0.75)] * 4}
+                'overlaps': [(0.75, 0.75)] * n}
     def _find_cars_heatmap(self, im, show=False):
         shape = self._model.input_shape
         if show == True:
@@ -73,7 +71,6 @@ class FrameVehiclePipeline():
             #print(nw, se)
             car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape))
             if car == 1:
-                print(nw, se)
                 self._heatmap[ys:ye,xs:xe] += 1
                 if show == True:
                     cpy = cv.rectangle(cpy, nw, se, (0,0,255), 2)
@@ -82,8 +79,8 @@ class FrameVehiclePipeline():
             #hm = np.dstack([self._heatmap, zeros, zeros])
             common.show_image([cpy, self._heatmap], ncols=2, window_title='Cars Heat Map',
                               titles=['original', 'heatmap'])
-    def _find_cars_boxes(self, thresh=1.5, show=False):
-        self._heatmap[self._heatmap < thresh] = 0
+    def _find_cars_boxes(self, thresh=1, show=False):
+        self._heatmap[self._heatmap <= thresh] = 0
         self._labels = measurments.label(self._heatmap)
     def _draw_car_boxes(self, im, show=False):
         n = self._labels[1]+1
