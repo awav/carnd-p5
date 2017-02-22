@@ -84,7 +84,7 @@ class FrameVehiclePipeline():
             #hm = np.dstack([self._heatmap, zeros, zeros])
             common.show_image([cpy, self._heatmap], ncols=2, window_title='Cars Heat Map',
                               titles=['original', 'heatmap'])
-    def _find_cars_boxes(self, thresh=1, show=False):
+    def _find_cars_boxes(self, thresh=1.5, show=False):
         self._heatmap[self._heatmap < thresh] = 0
         self._labels = measurments.label(self._heatmap)
     def _draw_car_boxes(self, im, show=False):

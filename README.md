@@ -426,4 +426,49 @@ class FrameVehiclePipeline():
         return self._draw_car_boxes(orig, show=show)
 ```
 
+#### Optimization
+
+I have tried to optimize the way of searching wrong detected cars and lost boxes by introducing static heatmap. I weighted each pixel after processing. In fact, I applied to `Exponential Moving Average` to heatmap pixels to smooth it for next interation, so that previous car's pixels could contribute to box searching in next frame. But I didn't get a good results on it. You can check video and find that car boxing is shaky.
+
+```python
+## track.py
+def _find_cars_heatmap(self, im, show=False):
+    shape = self._model.input_shape
+    if show == True:
+        cpy = cv.cvtColor(im, cv.COLOR_HSV2RGB)
+    _show=False
+    if show == True:
+        _show = True
+    for nw, se in self._slicer.wins:
+        ys, ye = nw[1], se[1]
+        xs, xe = nw[0], se[0]
+        #print(nw, se)
+        car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape), show=_show)
+        _show = False
+        if car == 1:
+            self._heatmap[ys:ye,xs:xe] += 1
+            if show == True:
+                cpy = cv.rectangle(cpy, nw, se, (0,0,255), 2)
+                common.show_image(im[ys:ye,xs:xe,:], titles='resized-car')
+    if show == True:
+        #zeros = np.zeros(self._heatmap.shape)
+        #hm = np.dstack([self._heatmap, zeros, zeros])
+        common.show_image([cpy, self._heatmap], ncols=2, window_title='Cars Heat Map',
+                          titles=['original', 'heatmap'])
+def _find_cars_boxes(self, thresh=1, show=False):
+    self._heatmap[self._heatmap < thresh] = 0
+    self._labels = measurments.label(self._heatmap)
+def _draw_car_boxes(self, im, show=False):
+    n = self._labels[1]+1
+    for car in range(1, n):
+        ## x and y coordinates
+        y, x = (self._labels[0] == car).nonzero()
+        nw, se = (np.min(x), np.min(y)), (np.max(x), np.max(y))
+        cv.rectangle(im, nw, se, (255,255,0), 2)
+    if show == True:
+        common.show_image(im, window_title='Cars Heat Map', titles='Detected cars')
+    return im
+def _reset_heatmap(self):
+    self._heatmap[:] *= 0.3
+```
 
