@@ -402,6 +402,12 @@ But after tunning it became better:
 ![alt text](project/heatmap.png)
 
 Here is shown the code of frame processing pipeline:
+- `process` function gets RGB frame
+- `process` function undistorts the frame
+- convertes frame HSV color map
+- updates cached heatmap
+- using `sklearn` label function to searches boxes of cars
+- draws boxes in the frame
 
 ```
 class FrameVehiclePipeline():
