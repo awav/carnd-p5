@@ -237,6 +237,12 @@ Test accuracy: 0.99747
 
 The code below summarizes training and predicting processes for chosen model. This class can be saved and loaded by demand to and from disk respectively.
 
+As you can see training consists of three steps:
+
+1. Splitting data into training and testing subsets
+2. Training model, depending on mode (`XGBoost` or `SVM`)
+3. Getting an accuracy of the model
+
 ```python
 ## model.py
 class CarModel():
@@ -317,5 +323,4 @@ class CarModel():
              pickle.dump(self.__dict__, fd)
 
 ```
-
 

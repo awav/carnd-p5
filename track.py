@@ -66,7 +66,7 @@ class FrameVehiclePipeline():
         if show == True:
             cpy = cv.cvtColor(im, cv.COLOR_HSV2RGB)
         _show=False
-        if show == True
+        if show == True:
             _show = True
         for nw, se in self._slicer.wins:
             ys, ye = nw[1], se[1]
