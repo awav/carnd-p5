@@ -154,7 +154,7 @@ class CarModel():
                 ytest_hot = self._one_hot_encode(ytest)
                 auc_msg = "AUC score: {0:.05f}"
                 print(auc_msg.format(metrics.roc_auc_score(ytest_hot, pred_prob)))
-        if show == True:
+        if self._mode == 'xgboost' and show == True:
             importance = pd.Series(self._model.booster().get_fscore()).sort_values(ascending=False)
             importance.plot(kind='bar', title='Feature Importance')
             plt.show()

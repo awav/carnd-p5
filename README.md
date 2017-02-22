@@ -205,9 +205,9 @@ The code for embeddings you can find in `VehicleDataset` class.
 ### Model training
 #### Criteria: The HOG features extracted from the training data have been used to train a classifier, could be SVM, Decision Tree or other. Features should be scaled to zero mean and unit variance before training the classifier.
 
-I inclined to use XGBoost to classify vehicles, but during testing I found that SVM is much faster in training and in value predicting. Also, SVM are more stable despite the fact that XGBoost was getting better accuracy on testing data.
+I inclined to use `XGBoost` to classify vehicles, but during testing I found that `SVM` is much faster in training and in value predicting. Also, `SVM` are more stable despite the fact that `XGBoost` was getting better accuracy on testing data.
 
-The one benefit that I got from using XGBoost is that I got a distribution of importance scores for features. All top 10 values are HOG values and it means that it contributes a lot to classification. For train SVM 
+The one benefit that I got from using XGBoost is that I got a distribution of importance scores for features. All top 10 values are HOG values and it means that HOG values contribute a lot to classification. For training SVM 
 
 #### XGBoost resuls
 
@@ -235,5 +235,8 @@ AUC score: 0.99994
 Test accuracy: 0.99747
 ```
 
+The code below summarizes training and predicting processes for chosen model:
 
+```python
 
+```

@@ -69,7 +69,7 @@ class FrameVehiclePipeline():
             ys, ye = nw[1], se[1]
             xs, xe = nw[0], se[0]
             #print(nw, se)
-            car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape))
+            car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape), show=show)
             if car == 1:
                 self._heatmap[ys:ye,xs:xe] += 1
                 if show == True:
