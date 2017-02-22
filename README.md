@@ -485,9 +485,12 @@ Examples of boxes:
 I stumbled upon with multiple issues:
 
 0. Overall performance really annoying and prevents proper testing. E.g. lowest time that I have got is 1.18s per iteration.
-1. It is really hard to find approapriate sizes of windows. I believe it can be done by perspective calculation but I have some concerns that it will be wasting of time.
-2. The balance between number of windows and overlapping size is very fragile and affects efficiency a loot.
-3. Despite the fact that I have got really impressive testing accuracy numbers even after Grid Search tuning of paramerters, I still have a lot of artifacts in video.
+1. Despite the fact that I have got really impressive testing accuracy numbers even after Grid Search tuning of paramerters, I still have a lot of artifacts in video.
+2. It is really hard to find approapriate sizes of windows. I believe it can be done by perspective calculation but I have some concerns that it will be wasting of time.
+3. The balance between number of windows and overlapping size is very fragile and affects efficiency a loot.
+4. Thesholding heatmap causes weak car boxing. Incrementing this value only by one, the algorithm rejected all or some of the cars. For example:
+
+![alt text](project/hard.png)
 
 ### Conclusion
 
