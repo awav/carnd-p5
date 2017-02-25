@@ -57,7 +57,7 @@ class Features:
                         dtype=np.float32)
     @classmethod
     def _extract_features(cls, im,
-               inc_hog_channel='all', inc_color_hist=True,
+               inc_hog_channel='all', inc_color_hist=False,
                inc_spatial_bins=True, orients=8,
                cell_size=8, block_size=2,
                vector=True, dst_size=32,
@@ -79,7 +79,7 @@ class Features:
             fcolor = cls.color_hist_features(im, bins, binrange, show=show)
         if inc_spatial_bins:
             fspatial = cls.binspatial_features(im, dst_size, show=show)
-        return np.concatenate([np.float32(fhog), np.float32(fcolor), np.float32(fspatial)])
+        return np.concatenate([fhog, fcolor, fspatial]).astype(np.float32)
     @staticmethod
     def hog_features(im, orients=8, cell_size=8, block_size=2, vector=True, show=False):
         if show == True:
@@ -102,7 +102,7 @@ class Features:
                            visualise=show)
         return features
     @staticmethod
-    def binspatial_features(im, dst_size=16, show=False):
+    def binspatial_features(im, dst_size=32, show=False):
         features = cv.resize(im, (dst_size,)*2)
         if show == True:
             show_image([im, features], ncols=2,

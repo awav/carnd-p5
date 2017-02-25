@@ -41,23 +41,22 @@ from features import Features
 
 class VehiclesDataset():
     def __init__(self, load=True,
-                 vehicles=["data/vehicles/", "data/OwnCollection/vehicles/"],
-                 nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
-                 #vehicles=["data/vehicles/"],
-                 #nonvehicles=["data/non-vehicles/"],
-                 color='HSV'):
+                 vehicles=["data/vehicles/"],
+                 nonvehicles=["data/non-vehicles"],
+                 color='HSL'):
         if load == True:
             self.color = color
             veh = common.load_images(*vehicles, color=color)
             nonveh = common.load_images(*nonvehicles, color=color)
             veh_lbl = np.array([1] * veh.shape[0])
             nonveh_lbl = np.array([0] * nonveh.shape[0])
-            self.x_orig = np.vstack([veh, nonveh])
+            self.x_orig = np.concatenate([veh, nonveh])
             self.y_orig = np.concatenate([veh_lbl, nonveh_lbl])
         else:
             self.x_orig = None
             self.y_orig = None
         self.x = None
+        self.colormap = color
     def put_features(self, features):
         self.x = features
     def embeddings(self, log_dir='tflog'):
@@ -103,8 +102,9 @@ class CarModel():
         self._f.fit_scaler(features, mode=mode)
         x = self._f.normalize(features)
         data.put_features(x)
+        self._colormap = data.colormap
         return data
-    def fit(self, data, random_state=101, show=True):
+    def fit(self, data, random_state=11, show=False):
         if data.x is None:
             raise ValueError('Dataset does not have input values')
         x = data.x
@@ -113,9 +113,10 @@ class CarModel():
         self._train(train, test, show=show)
     def predict(self, im, show=False):
         f = self._f
+        im = common.cvt_color(im, color=self._colormap, src='RGB')
         pred = self._model.predict(f.normalize(f.extract(np.array([im]), show=show)))
         return pred[0]
-    def _split_data(self, x, y, test_size=0.2, random_state=101):
+    def _split_data(self, x, y, test_size=0.1, random_state=11):
         xtr, xt, ytr, yt = train_test_split(x, y, test_size=test_size, random_state=random_state)
         return (xtr, ytr), (xt, yt)
     def _one_hot_encode(self, y):
@@ -124,7 +125,7 @@ class CarModel():
         one = np.zeros((height, width), dtype=np.int32)
         one[range(height), y] = 1
         return one
-    def _train(self, train, test, random_state=101, show=False):
+    def _train(self, train, test, random_state=11, show=False):
         x, y = train
         xtest, ytest = test
         if self._mode == 'xgboost':
@@ -142,7 +143,7 @@ class CarModel():
                               seed=random_state)
             self._model.fit(x, y, eval_metric='auc')
         else:
-            self._model = LinearSVC(max_iter=25000, penalty='l2', random_state=random_state)
+            self._model = LinearSVC(random_state=random_state)
             #self._model = SVC(kernel='rbf', max_iter=25000, random_state=random_state)
             #self._model = SVC(max_iter=25000, random_state=random_state)
             self._model.fit(x, y)

@@ -40,51 +40,61 @@ class FrameVehiclePipeline():
         self._slicer = Slicer(**(self.slice_params()))
         self._heatmap = np.zeros(shape)
         self._labels = None
+        self._i = 0
     def process(self, orig, show=False):
-        im = cv.cvtColor(clb.undistort(orig, show=show), cv.COLOR_RGB2HSV)
+        im = clb.undistort(orig, show=show)
         self._find_cars_heatmap(im, show=show)
         self._find_cars_boxes(show=show)
         self._reset_heatmap()
         return self._draw_car_boxes(orig, show=show)
+        #return self._heatmap
     def slice_params(self, height=720, width=1280):
-        n = 3
-        #ws = [96,128,160,192]
+        n = 4
+        ws = [96,128,160,192]
         #nw_y = [400,400,430,460]
-        #nw_xs = [0,0,0,0]
-        #se_ys = [500,500,550,580]
-        ws = [96,128,160]
-        nw_y = [400,400,400]
-        nw_xs = [100,0,0]
-        se_ys = [nw_y[i] + ws[i] for i in range(n)]
+        nw_y = [376,368,390,412]
+        nw_xs = [0,0,0,0]
+        se_ys = [500,500,550,580]
+        #n = 3
+        #ws = [96,128,160]
+        #nw_y = [400,400,400]
+        #nw_xs = [100,0,0]
+        #se_ys = [nw_y[i] + ws[i] for i in range(n)]
 
         boxes = [((nw_xs[i], nw_y[i]), (width-nw_xs[i], se_ys[i])) for i in range(n)]
         return {'boxes': boxes,
                 'windows': list(zip(ws, ws)),
                 'overlaps': [(0.75, 0.75)] * n}
+    def samples(self, im, target='data/video_dataset/'):
+        im = clb.undistort(im)
+        shape = self._model.input_shape
+        for nw, se in self._slicer.wins:
+            ys, ye = nw[1], se[1]
+            xs, xe = nw[0], se[0]
+            cpy = cv.resize(im[ys:ye,xs:xe,:], shape[:2])
+            cpy = common.cvt_color(cpy, color='BGR', src='RGB')
+            cv.imwrite('{0}/{1}.png'.format(target, self._i), cpy)
+            self._i += 1
+        print(self._i)
+        return im
     def _find_cars_heatmap(self, im, show=False):
         shape = self._model.input_shape
-        if show == True:
-            cpy = cv.cvtColor(im, cv.COLOR_HSV2RGB)
-        _show=False
-        if show == True:
-            _show = True
+        _show = show if show == True else False
         for nw, se in self._slicer.wins:
             ys, ye = nw[1], se[1]
             xs, xe = nw[0], se[0]
             #print(nw, se)
-            car = self._model.predict(np.resize(im[ys:ye,xs:xe,:], shape), show=_show)
-            _show = False
+            car = self._model.predict(cv.resize(im[ys:ye,xs:xe,:], shape[:2]), show=_show)
+            #_show = False
             if car == 1:
                 self._heatmap[ys:ye,xs:xe] += 1
                 if show == True:
-                    cpy = cv.rectangle(cpy, nw, se, (0,0,255), 2)
-                    common.show_image(im[ys:ye,xs:xe,:], titles='resized-car')
+                    cv.rectangle(im, nw, se, (0,0,255), 2)
+                    #common.show_image(im[ys:ye,xs:xe,:], titles='resized-car')
         if show == True:
-            #zeros = np.zeros(self._heatmap.shape)
-            #hm = np.dstack([self._heatmap, zeros, zeros])
-            common.show_image([cpy, self._heatmap], ncols=2, window_title='Cars Heat Map',
+            common.show_image([im, self._heatmap], ncols=2, window_title='Cars Heat Map',
                               titles=['original', 'heatmap'])
-    def _find_cars_boxes(self, thresh=1, show=False):
+    def _find_cars_boxes(self, thresh=9, show=False):
         self._heatmap[self._heatmap < thresh] = 0
         self._labels = measurments.label(self._heatmap)
     def _draw_car_boxes(self, im, show=False):
@@ -98,7 +108,7 @@ class FrameVehiclePipeline():
             common.show_image(im, window_title='Cars Heat Map', titles='Detected cars')
         return im
     def _reset_heatmap(self):
-        self._heatmap[:] *= 0.3
+        self._heatmap[:] *= 0.5
 
 class Slicer():
     def __init__(self, **kwargs):

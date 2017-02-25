@@ -57,6 +57,17 @@ def single_video(filename, output='./output.mp4'):
     out = video.fl_image(t.process)
     out.write_videofile(output, audio=False)
 
+def generate_samples(filename, output='./output.mp4'):
+    if not clb.initialized():
+        clb.find_pictures(directory='./camera_cal/')
+        clb.calibrate_camera(9, 6)
+    m = model.CarModel()
+    m.load()
+    t = track.FrameVehiclePipeline(m, shape=(720,1280))
+    video = VideoFileClip(filename)
+    out = video.fl_image(t.samples)
+    out.write_videofile(output, audio=False)
+
 def visualize():
     print("Load images")
     v_ims1 = common.load_images("data/vehicles/", color='RGB')

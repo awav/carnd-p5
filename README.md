@@ -476,9 +476,16 @@ Examples of boxes:
 
 ![alt text](project/detected-cars.png)
 
+### UPDATES
+
+1. I followed assuptions of previous reviewer about color schemas and found that only `HSV` and `HSL` maps give me best results.
+2. I have added more samples to `non-vehicle` class, around ~13% of existing dataset. Half of them I took from project video and another half I augmented by random flipping and scaling (I used augmenter from project 2). After that, I got not so good accuracy, but better practical result - less noise and false positives.
+3. I enlarged height of the video a bit and got significantly better bounding boxes.
+4. There are two video files in Google Drive folder. The `output_final.mp4` is an example of transformation invariance of this problem, because during testing I found out that prediction used `numpy.resize()` function instead of OpenCV resize and as you can imagine it produced absolutely non-sense resized image, but learned classfier still could produce good results. That is really amazing result, but accident.
+
 ### Video link
 
-[Here you can find bunch of videos](https://drive.google.com/open?id=0B90SlGxx-BAeMW1hS2liaFM4TW8)
+Please, take a look at two videos by this [link](https://drive.google.com/open?id=0B90SlGxx-BAeMW1hS2liaFM4TW8).
 
 ### Discussion
 
@@ -491,7 +498,6 @@ I faced multiple issues during this project:
 4. Thesholding heatmap causes weak car boxing. Incrementing this value only by one, the algorithm rejected all or some of the cars. E.g. look at picture below, it is easy to notice that if I set threshold value to 2, then right car will be removed from this frame report.
 
 ![alt text](project/hard.png)
-
 
 ### Conclusion
 

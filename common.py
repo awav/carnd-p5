@@ -24,18 +24,28 @@ import re
 
 def load_image(filename, color='RGB'):
     im = cv.imread(filename, cv.IMREAD_COLOR)
-    return cvt_color(im, color)
+    return cvt_color(im, color=color, src='BGR')
 
-def cvt_color(im, color='RGB'):
-    colors = {'RGB':cv.COLOR_BGR2RGB,
-              'HLS':cv.COLOR_BGR2HLS,
-              'HSV':cv.COLOR_BGR2HSV,
-              'LUV':cv.COLOR_BGR2LUV,
-              'YUV':cv.COLOR_BGR2YUV,
-              'YCrCb':cv.COLOR_BGR2YCrCb}
+def cvt_color(im, color='RGB', src='BGR'):
+    if src == 'BGR':
+        colors = {'RGB':cv.COLOR_BGR2RGB,
+                  'HLS':cv.COLOR_BGR2HLS,
+                  'HSV':cv.COLOR_BGR2HSV,
+                  'LUV':cv.COLOR_BGR2LUV,
+                  'YUV':cv.COLOR_BGR2YUV,
+                  'YCrCb':cv.COLOR_BGR2YCrCb}
+    elif src == 'RGB':
+        colors = {'BGR':cv.COLOR_RGB2BGR,
+                  'HLS':cv.COLOR_RGB2HLS,
+                  'HSV':cv.COLOR_RGB2HSV,
+                  'LUV':cv.COLOR_RGB2LUV,
+                  'YUV':cv.COLOR_RGB2YUV,
+                  'YCrCb':cv.COLOR_RGB2YCrCb}
+    else:
+        raise ValueError("Source image can be either in RGB or BGR colormap")
     if color not in colors:
         raise ValueError("{0} color is not allowed".format(color))
-    return cv.cvtColor(im, colors[color.upper()])
+    return cv.cvtColor(im, colors[color])
 
 def list_images(folder, regex=None):
     return np.array([filename for filename in _list_images(folder)])
@@ -67,7 +77,7 @@ def _list_images(folder, regex=None):
 def load_images(*dirs, color='RGB'):
     return np.array([im for im in _load_images(*dirs, color=color)])
     
-def _load_images(*dirs, color):
+def _load_images(*dirs, color='RGB'):
     """
     Generator to list images in specified dirs.
     By default it loads images in RGB.
@@ -79,7 +89,7 @@ def _load_images(*dirs, color):
             if subdirname not in subdirs:
                 subdirs.add(subdirname)
                 print(subdirname)
-            yield load_image(filename, color)
+            yield load_image(filename, color=color)
 
 def serialize(obj, filename):
     with open(filename, 'wb') as fd:
