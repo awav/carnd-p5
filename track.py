@@ -79,7 +79,8 @@ class FrameVehiclePipeline():
         return im
     def _find_cars_heatmap(self, im, show=False):
         shape = self._model.input_shape
-        _show = show if show == True else False
+        #_show = show if show == True else False
+        _show = False
         for nw, se in self._slicer.wins:
             ys, ye = nw[1], se[1]
             xs, xe = nw[0], se[0]

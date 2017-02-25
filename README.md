@@ -401,7 +401,7 @@ Sometimes I was getting even ridiculous results like that:
 
 But after tunning it became better:
 
-![alt text](project/heatmap.png)
+![alt text](project/boxes.png)
 
 Here is shown the code of frame processing pipeline:
 - `process` function gets RGB frame
@@ -476,7 +476,7 @@ def _reset_heatmap(self):
 
 Examples of boxes:
 
-![alt text](project/detected-cars.png)
+![alt text](project/result.png)
 
 ### UPDATES
 
