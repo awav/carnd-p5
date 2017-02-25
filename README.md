@@ -26,7 +26,7 @@ ass VehiclesDataset():
                  #nonvehicles=["data/non-vehicles/", "data/OwnCollection/non-vehicles/"],
                  vehicles=["data/vehicles/"],
                  nonvehicles=["data/non-vehicles/"],
-                 color='HSV'):
+                 color='HLS'):
         if load == True:
             self.color = color
             veh = common.load_images(*vehicles, color=color)
@@ -73,12 +73,12 @@ ass VehiclesDataset():
 
 To extract features I used stadard solution basically provided by Udacity in the course. I modified a bit interface and optimized the way how they are computed for whole dataset.
 
-I used HOG features, spatial binning and color histograms altogether. All input images are converted into HSV color scheme before feature extracting. Let's take a look at default arguments and paramerters for these feature extractors:
+I used HOG features, spatial binning and color histograms altogether. All input images are converted into HSV (changed later to HLS) color scheme before feature extracting. Let's take a look at default arguments and paramerters for these feature extractors:
 
 * Hog params:
    - use all channels of an inputs image
    - number of orientations is 8
-   - cell_size is 
+   - cell_size is 8
    - block_size is 2
 * Image bins params:
    - number of bins is 32
@@ -242,6 +242,8 @@ AUC score: 0.99994
 |  4706         | 22               |
 |  4713         | 22               |
 |  3393         | 20               |
+
+![alt text](project/importance.png)
 
 #### SVM results
 
@@ -479,9 +481,21 @@ Examples of boxes:
 ### UPDATES
 
 1. I followed assuptions of previous reviewer about color schemas and found that only `HSV` and `HSL` maps give me best results.
+As you can see HOG values for HSL **'look better'** in comparison with HOG values of HSV. I didn't measure the difference numerically, but I believe that in general it represents better borders of a car.
+
+HOG of hue channel:
+![alt text](project/hue.png)
+
+HOG of level channel:
+![alt text](project/level.png)
+
+HOG of saturation channel:
+![alt text](project/saturation.png)
+
 2. I have added more samples to `non-vehicle` class, around ~13% of existing dataset. Half of them I took from project video and another half I augmented by random flipping and scaling (I used augmenter from project 2). After that, I got not so good accuracy, but better practical result - less noise and false positives.
-3. I enlarged height of the video a bit and got significantly better bounding boxes.
-4. There are two video files in Google Drive folder. The `output_final.mp4` is an example of transformation invariance of Linear SVM classifier, because during testing I found a bug in prediction function which used `numpy.resize()` function instead of OpenCV resize and as you can imagine it produced absolutely non-sense resized image, but learned classfier still could produce good results. That is really amazing result, but accident. The `output_super_final.mp4` video made after replacing `numpy.resize()` with `opencv.resize()` function.
+3. I removed from features color histogram values because they sit in the tail of XGBoost importance histogram.
+4. I enlarged height of the video a bit and got significantly better bounding boxes.
+5. There are two video files in Google Drive folder. The `output_final.mp4` is an example of transformation invariance of Linear SVM classifier, because during testing I found a bug in prediction function which used `numpy.resize()` function instead of OpenCV resize and as you can imagine it produced absolutely non-sense resized image, but learned classfier still could produce good results. That is really amazing result, but accident. The `output_super_final.mp4` video made after replacing `numpy.resize()` with `opencv.resize()` function.
 
 ### Video link
 
